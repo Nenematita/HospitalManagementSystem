@@ -1,71 +1,118 @@
-# Library Management System
+-- 1. CREATE DATABASE
+CREATE DATABASE HospitalDB;
+GO
+USE HospitalDB;
+GO
 
-## Overview
-This is a **Library Management System** implemented using **SQL Server (T-SQL)**.  
-It is a mock project designed for academic purposes (finals submission) and demonstrates the use of **database creation, table relationships, CRUD operations, and reporting queries**.
+-- 2. CREATE TABLES
 
-The system manages:
+-- Departments
+CREATE TABLE Departments (
+    DepartmentID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    Floor INT
+);
 
-- **Authors**: Information about book authors  
-- **Books**: Catalog of books in the library  
-- **Members**: Library members who borrow books  
-- **Staff**: Library staff members  
-- **Borrowings**: Tracks which member borrowed which book and when
+-- Doctors
+CREATE TABLE Doctors (
+    DoctorID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    DepartmentID INT FOREIGN KEY REFERENCES Departments(DepartmentID),
+    Email NVARCHAR(100),
+    Phone NVARCHAR(15)
+);
 
----
+-- Patients
+CREATE TABLE Patients (
+    PatientID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100),
+    Phone NVARCHAR(15),
+    DateOfBirth DATE
+);
 
-## Database Structure
+-- Staff
+CREATE TABLE Staff (
+    StaffID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100),
+    Position NVARCHAR(50),
+    Email NVARCHAR(100)
+);
 
-### Tables
+-- Appointments
+CREATE TABLE Appointments (
+    AppointmentID INT IDENTITY(1,1) PRIMARY KEY,
+    PatientID INT FOREIGN KEY REFERENCES Patients(PatientID),
+    DoctorID INT FOREIGN KEY REFERENCES Doctors(DoctorID),
+    AppointmentDate DATE DEFAULT GETDATE(),
+    Diagnosis NVARCHAR(200),
+    Status NVARCHAR(50) DEFAULT 'Scheduled'
+);
 
-| Table      | Description |
-|-----------|-------------|
-| Authors   | Stores author information (AuthorID, Name, Country) |
-| Books     | Stores books (BookID, Title, AuthorID, Genre, Quantity) |
-| Members   | Stores library members (MemberID, Name, Email, Phone, JoinDate) |
-| Staff     | Stores library staff (StaffID, Name, Position, Email) |
-| Borrowings| Tracks book borrowing (BorrowID, MemberID, BookID, BorrowDate, ReturnDate) |
+-- =====================
+-- 3. INSERT SAMPLE DATA
+-- =====================
 
----
+-- Departments
+INSERT INTO Departments (Name, Floor) VALUES
+('Cardiology', 2),
+('Pediatrics', 3),
+('Neurology', 4);
 
-## Files
+-- Doctors
+INSERT INTO Doctors (Name, DepartmentID, Email, Phone) VALUES
+('Dr. John Smith', 1, 'john.smith@hospital.com', '1234567890'),
+('Dr. Alice Brown', 2, 'alice.brown@hospital.com', '2345678901'),
+('Dr. Bob Lee', 3, 'bob.lee@hospital.com', '3456789012');
 
-- `create_tables.sql` – Contains all `CREATE DATABASE` and `CREATE TABLE` statements  
-- `insert_data.sql` – Contains sample `INSERT` statements to populate tables  
-- `queries.sql` – Contains CRUD operations and advanced reporting queries (e.g., most borrowed books, overdue books)  
+-- Patients
+INSERT INTO Patients (Name, Email, Phone, DateOfBirth) VALUES
+('Michael Johnson', 'michael@example.com', '4567890123', '1985-05-12'),
+('Sara Davis', 'sara@example.com', '5678901234', '1992-08-22');
 
----
+-- Staff
+INSERT INTO Staff (Name, Position, Email) VALUES
+('Nurse Mary', 'Head Nurse', 'mary@hospital.com'),
+('Admin Tom', 'Receptionist', 'tom@hospital.com');
 
-## Features / Queries
+-- Appointments
+INSERT INTO Appointments (PatientID, DoctorID, AppointmentDate, Diagnosis, Status) VALUES
+(1, 1, '2026-02-10', 'High blood pressure', 'Completed'),
+(2, 2, '2026-02-12', NULL, 'Scheduled');
 
-- View all books with author names  
-- Add, update, and delete records  
-- Track borrowed books and overdue books  
-- Generate reports such as most borrowed books  
+-- =====================
+-- 4. CRUD & REPORT QUERIES
+-- =====================
 
----
+-- View all appointments with patient and doctor info
+SELECT a.AppointmentID, p.Name AS Patient, d.Name AS Doctor, dep.Name AS Department, a.AppointmentDate, a.Status
+FROM Appointments a
+JOIN Patients p ON a.PatientID = p.PatientID
+JOIN Doctors d ON a.DoctorID = d.DoctorID
+JOIN Departments dep ON d.DepartmentID = dep.DepartmentID;
 
-## How to Use
+-- Add a new appointment
+INSERT INTO Appointments (PatientID, DoctorID, AppointmentDate) VALUES (2, 3, '2026-02-15');
 
-1. Open **SQL Server Management Studio (SSMS)**.  
-2. Create a new query and paste the SQL scripts in the following order:
-   1. `create_tables.sql`  
-   2. `insert_data.sql`  
-   3. `queries.sql`  
-3. Execute the scripts.  
-4. The database `LibraryDB` with all tables, sample data, and queries will be ready.  
+-- Update appointment status
+UPDATE Appointments
+SET Status = 'Completed', Diagnosis = 'Migraine'
+WHERE AppointmentID = 2;
 
----
+-- Delete a staff member
+DELETE FROM Staff
+WHERE StaffID = 2;
 
-## Notes
+-- Patients with upcoming appointments
+SELECT p.Name AS Patient, d.Name AS Doctor, a.AppointmentDate
+FROM Appointments a
+JOIN Patients p ON a.PatientID = p.PatientID
+JOIN Doctors d ON a.DoctorID = d.DoctorID
+WHERE a.Status = 'Scheduled';
 
-- This project uses **T-SQL (SQL Server syntax)**. Some syntax (like `IDENTITY` for auto-increment and `GETDATE()` for current date) may need adjustment for other SQL systems.  
-- The project is intended for learning and demonstration purposes only.  
-
----
-
-## Author
-
-- [Your Name]  
-- Academic Project / Finals Submission  
-
+-- Doctors with number of appointments
+SELECT d.Name AS Doctor, COUNT(*) AS NumAppointments
+FROM Appointments a
+JOIN Doctors d ON a.DoctorID = d.DoctorID
+GROUP BY d.Name
+ORDER BY NumAppointments DESC;
