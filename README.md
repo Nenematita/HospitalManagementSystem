@@ -65,6 +65,6 @@ The system manages:
 ---
 
 ## Author
--Nene Matitaishvili
-- [Your Name]  
+
+- Nene Matitaishvili
 - Academic Project / Finals Submission
